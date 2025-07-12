@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://placehold.co/120x120?text=Logo" alt="StreamFix Pro Logo" width="120"/>
-</p>
-
 <h1 align="center">StreamFix Pro</h1>
 
 <p align="center">
@@ -11,7 +7,6 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.7%2B-blue" alt="Python Version">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/Web-Interface-brightgreen" alt="Web Interface">
   <img src="https://img.shields.io/badge/CLI-Supported-blueviolet" alt="CLI Supported">
 </p>
