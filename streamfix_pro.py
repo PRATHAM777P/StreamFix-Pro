@@ -62,13 +62,6 @@ def fix_top_n_no_duplicates(section_data, top_n, section_id=None, summary=None):
         else:
             moved.append((idx, streamer_ids[idx]))
         idx += 1
-    # If still less than N, fill with whatever is left
-    for i in range(top_n):
-        if len(fixed_top) < top_n and i < len(streamer_ids):
-            if streamer_ids[i] not in fixed_top:
-                fixed_top.append(streamer_ids[i])
-            else:
-                moved.append((i, streamer_ids[i]))
     # Build the rest of the list (from N onward)
     rest = []
     for i in range(top_n, len(streamer_ids)):
