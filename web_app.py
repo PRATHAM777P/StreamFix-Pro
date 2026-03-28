@@ -1,7 +1,8 @@
-from flask import Flask, request, render_template_string, send_file
+from flask import Flask, request, render_template_string, send_file, abort
 import os
 import tempfile
 import json
+from werkzeug.utils import safe_join
 from streamfix_pro import (
     load_input, save_output, process_sections, save_summary
 )
@@ -10,6 +11,7 @@ import plotly.io as pio
 import base64
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # FIX 3: 16MB max upload limit
 
 HTML = '''
 <!doctype html>
@@ -46,7 +48,7 @@ HTML = '''
   <h3>Before/After Unique Streamers in Top N</h3>
   <img src="data:image/png;base64,{{ plot_img }}"/>
 {% endif %}
-''' 
+'''
 
 def get_unique_counts(data, top_n, sections=None):
     counts = {}
@@ -121,10 +123,18 @@ def index():
             os.unlink(tmp_in_path)
     return render_template_string(HTML, output_url=output_url, summary_url=summary_url, plot_img=plot_img, input_json=input_json, output_json=output_json, top_n=top_n, sections=sections)
 
+# FIX 1: Safe download - blocks path traversal attacks
 @app.route('/download/<filename>')
 def download_file(filename):
     dirpath = tempfile.gettempdir()
-    return send_file(os.path.join(dirpath, filename), as_attachment=True)
+    try:
+        safe_path = safe_join(dirpath, filename)
+    except Exception:
+        abort(400)
+    if not os.path.isfile(safe_path):
+        abort(404)
+    return send_file(safe_path, as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    # FIX 2: Debug mode off by default, only on if you set FLASK_DEBUG=true
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
