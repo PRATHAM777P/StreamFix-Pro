@@ -1,0 +1,30 @@
+# Logs
+stream_rank_fixer.log
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Input/Output data files
+input.json
+output.json
+*.csv
+
+# Summary reports
+summary*.json
+summary*.txt
+
+# Temp files
+*.tmp
+
+# Virtual environment
+venv/
+env/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
