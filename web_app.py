@@ -98,6 +98,10 @@ def index():
             return render_template_string(HTML, output_url=None, summary_url=None, plot_img=None)
         top_n = int(request.form.get('top_n', 3))
         fmt = request.form.get('format', 'json')
+        fmt = (fmt or 'json').strip().lower()
+        allowed_formats = {'json'}
+        if fmt not in allowed_formats:
+            fmt = 'json'
         sections = request.form.get('sections', '').strip()
         section_list = [s.strip() for s in sections.split(',') if s.strip()] if sections else None
         # Save uploaded file to temp
