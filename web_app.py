@@ -122,7 +122,8 @@ def index():
             input_json = json.dumps(data)
             output_json = json.dumps(output)
         except Exception as e:
-            return f'<h3>Error: {e}</h3>'
+            app.logger.exception("Error processing uploaded file")
+            return '<h3>An internal error has occurred. Please try again later.</h3>'
         finally:
             os.unlink(tmp_in_path)
     return render_template_string(HTML, output_url=output_url, summary_url=summary_url, plot_img=plot_img, input_json=input_json, output_json=output_json, top_n=top_n, sections=sections)
