@@ -2,7 +2,7 @@ from flask import Flask, request, render_template_string, send_file, abort
 import os
 import tempfile
 import json
-from werkzeug.utils import safe_join
+from werkzeug.utils import safe_join, secure_filename  # ✅ Added secure_filename
 from streamfix_pro import (
     load_input, save_output, process_sections, save_summary
 )
@@ -91,26 +91,42 @@ def index():
             fig.update_layout(barmode='group', title=f'Unique Streamers in Top {top_n} (Before/After)')
             img_bytes = pio.to_image(fig, format='png')
             plot_img = base64.b64encode(img_bytes).decode('utf-8')
-            return render_template_string(HTML, output_url=None, summary_url=None, plot_img=plot_img, input_json=input_json, output_json=output_json, top_n=top_n, sections=sections)
+            return render_template_string(
+                HTML, output_url=None, summary_url=None, plot_img=plot_img,
+                input_json=input_json, output_json=output_json, top_n=top_n, sections=sections
+            )
+
         # Normal process request
         file = request.files['input_file']
         if not file:
             return render_template_string(HTML, output_url=None, summary_url=None, plot_img=None)
+        
         top_n = int(request.form.get('top_n', 3))
-        fmt = request.form.get('format', 'json')
-        fmt = (fmt or 'json').strip().lower()
+        fmt = (request.form.get('format', 'json') or 'json').strip().lower()
         allowed_formats = {'json'}
         if fmt not in allowed_formats:
             fmt = 'json'
+        safe_fmt = secure_filename(fmt)  # ✅ Sanitize format before using in temp file suffix
+        
         sections = request.form.get('sections', '').strip()
         section_list = [s.strip() for s in sections.split(',') if s.strip()] if sections else None
+
         # Save uploaded file to temp
         with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_in:
             file.save(tmp_in)
             tmp_in_path = tmp_in.name
-        # Prepare output files
-        tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{fmt}')
+
+        # Prepare output files safely
+        tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{safe_fmt}')
         tmp_sum = tempfile.NamedTemporaryFile(delete=False, suffix='.json')
+
+        # Optional: enforce path safety
+        tmp_out_path = os.path.normpath(tmp_out.name)
+        tmp_sum_path = os.path.normpath(tmp_sum.name)
+        tmp_dir = tempfile.gettempdir()
+        if not tmp_out_path.startswith(tmp_dir) or not tmp_sum_path.startswith(tmp_dir):
+            raise Exception("Unsafe temp path detected")
+
         try:
             data = load_input(tmp_in_path)
             output, summary = process_sections(data, top_n, section_list)
@@ -118,7 +134,6 @@ def index():
             save_summary(summary, tmp_sum.name, top_n)
             output_url = f'/download/{os.path.basename(tmp_out.name)}'
             summary_url = f'/download/{os.path.basename(tmp_sum.name)}'
-            # For visualization, pass JSON as hidden fields
             input_json = json.dumps(data)
             output_json = json.dumps(output)
         except Exception as e:
@@ -126,7 +141,12 @@ def index():
             return '<h3>An internal error has occurred. Please try again later.</h3>'
         finally:
             os.unlink(tmp_in_path)
-    return render_template_string(HTML, output_url=output_url, summary_url=summary_url, plot_img=plot_img, input_json=input_json, output_json=output_json, top_n=top_n, sections=sections)
+
+    return render_template_string(
+        HTML, output_url=output_url, summary_url=summary_url,
+        plot_img=plot_img, input_json=input_json, output_json=output_json,
+        top_n=top_n, sections=sections
+    )
 
 # FIX 1: Safe download - blocks path traversal attacks
 @app.route('/download/<filename>')
