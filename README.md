@@ -21,7 +21,7 @@
 
 1. **Clone the repo:**
    ```sh
-   git clone https://github.com/yourusername/streamfix-pro.git
+   git clone https://github.com/PRATHAM777P/streamfix-pro.git
    cd streamfix-pro
    ```
 
